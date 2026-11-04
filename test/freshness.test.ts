@@ -325,6 +325,6 @@ describe("reminderText", () => {
 	});
 
 	it("uses the singular for one item", () => {
-		expect(reminderText(list([1, "Design", "pending"]))).toContain("1 open item");
+		expect(reminderText(list([1, "Design", "pending"]))).toContain("1 open item is");
 	});
 });

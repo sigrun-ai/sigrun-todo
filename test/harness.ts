@@ -18,24 +18,44 @@ import {
 	fauxProvider,
 } from "@earendil-works/pi-ai/providers/faux";
 import { createModels } from "@earendil-works/pi-ai/models";
+import { Type } from "@earendil-works/pi-ai";
 import {
 	createRegistry,
 	defineExtension,
+	defineTool,
 	Harness,
 	type ConversationId,
 	type Cursor,
 	type EntryQuery,
+	type HookRegistration,
 	type ModelRef,
 	type Page,
 	type EntryRecord,
+	type ToolRegistration,
 } from "@earendil-works/pi-durable";
 import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
 import type { SigrunHost } from "@sigrun/sigrun/extension";
 import { TodoLog, hostEntryReader, type EntryReader } from "../src/log.js";
 import { createTodoTool } from "../src/tool.js";
 
+/** A trivial work tool: marks a round as work without touching the list. */
+export const noopTool: ToolRegistration = defineTool({
+	name: "noop",
+	description: "Do nothing; a unit of work for scripted rounds.",
+	parameters: Type.Object({}),
+	async execute() {
+		return { output: [{ type: "text", text: "done" }] };
+	},
+});
+
 /** The extension under test: the real `todo` tool over a harness-owned log. */
-function createTestExtension(log: TodoLog) {
+function createTestExtension(
+	log: TodoLog,
+	options?: {
+		hooks?: HookRegistration[];
+		tools?: ToolRegistration[];
+	},
+) {
 	return defineExtension({
 		name: "todo",
 		tools: [
@@ -45,7 +65,9 @@ function createTestExtension(log: TodoLog) {
 				// persistence is proven by replaying the transcript instead.
 				onChanged: () => undefined,
 			}),
+			...(options?.tools ?? []),
 		],
+		hooks: options?.hooks,
 	});
 }
 
@@ -53,6 +75,8 @@ export interface OpenedHarness {
 	readonly harness: Harness;
 	readonly defaultModel: ModelRef;
 	readonly registry: ReturnType<typeof createRegistry>;
+	/** The faux provider: `appendResponses` re-scripts mid-test. */
+	readonly faux: ReturnType<typeof fauxProvider>;
 	/** The {@link EntryReader} over this harness's fork-aware transcripts. */
 	readonly read: EntryReader;
 	/** The cache the installed `todo` tool mutates (the round's live state). */
@@ -68,6 +92,10 @@ export async function openTodoHarness(
 	responses: Parameters<
 		ReturnType<typeof fauxProvider>["setResponses"]
 	>[0] = [fauxAssistantMessage("no tools needed")],
+	options?: {
+		hooks?: HookRegistration[];
+		tools?: ToolRegistration[];
+	},
 ): Promise<OpenedHarness> {
 	const faux = fauxProvider({
 		provider: "faux",
@@ -105,9 +133,9 @@ export async function openTodoHarness(
 	} as Pick<SigrunHost, "conversations">;
 	const read = hostEntryReader(host);
 	const log = new TodoLog(read);
-	registry.install(createTestExtension(log));
+	registry.install(createTestExtension(log, options));
 
-	return { harness, defaultModel, registry, read, log };
+	return { harness, defaultModel, registry, faux, read, log };
 }
 
 /** Fresh temp dir; the test body receives it and must clean up. */
