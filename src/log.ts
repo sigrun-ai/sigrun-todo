@@ -160,11 +160,19 @@ export class TodoLog {
 		if (cached !== undefined) return Promise.resolve(cached.state);
 		let seeding = this.#seeding.get(id);
 		if (seeding === undefined) {
-			seeding = replay(this.#read, id).then((state) => {
-				this.#cache.set(id, { state, dirty: false });
-				this.#seeding.delete(id);
-				return state;
-			});
+			seeding = replay(this.#read, id).then(
+				(state) => {
+					this.#cache.set(id, { state, dirty: false });
+					this.#seeding.delete(id);
+					return state;
+				},
+				(error) => {
+					// A rejected seed must NOT be cached: it stays retried by the
+					// next `get`, not pinned for the process lifetime.
+					this.#seeding.delete(id);
+					throw error;
+				},
+			);
 			this.#seeding.set(id, seeding);
 		}
 		return seeding;

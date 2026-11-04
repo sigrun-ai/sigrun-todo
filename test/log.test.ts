@@ -13,11 +13,12 @@ import {
 	fauxAssistantMessage,
 	fauxToolCall,
 } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationId, EntryId, EntryRecord } from "@earendil-works/pi-durable";
+import type { ConversationId, Cursor, EntryId, EntryRecord, Page } from "@earendil-works/pi-durable";
 import type { ToolResultMessage } from "@earendil-works/pi-ai";
+import type { SigrunHost } from "@sigrun/sigrun/extension";
 import { applyTodo } from "../src/state.js";
 import { EMPTY_STATE, type TodoSnapshot, type TodoState } from "../src/types.js";
-import { TodoLog, replay, type EntryReader } from "../src/log.js";
+import { TodoLog, hostEntryReader, replay, type EntryReader } from "../src/log.js";
 import { cleanupDir, closeOpened, openTodoHarness, tempDir } from "./harness.js";
 
 const CID = 1 as ConversationId;
@@ -145,6 +146,37 @@ describe("replay", () => {
 		const { read } = arrayReader([markerEntry(2, "pi.user"), markerEntry(1, "pi.assistant")]);
 		expect(await replay(read, CID)).toEqual(EMPTY_STATE);
 	});
+
+	it("hostEntryReader pages until exhausted, threading the cursor", async () => {
+		const state = seedState(2);
+		const seenCursors: (Cursor | undefined)[] = [];
+		const page2Cursor = { offset: 100 } as unknown as Cursor;
+		const host = {
+			conversations: {
+				entries: async (
+					id: ConversationId,
+					query: { order?: "ascending" | "descending" },
+					limit: number,
+					cursor?: Cursor,
+				): Promise<Page<EntryRecord, Cursor>> => {
+					expect(id).toBe(CID);
+					expect(query).toEqual({ order: "descending" });
+					expect(limit).toBe(100);
+					seenCursors.push(cursor);
+					if (cursor === undefined) {
+						// Page 1: bookkeeping only, more pages.
+						return { items: [markerEntry(300, "pi.compaction")], next: page2Cursor };
+					}
+					expect(cursor).toBe(page2Cursor);
+					// Page 2: the snapshot lives here, no further pages.
+					return { items: [snapshotEntry(200, state), snapshotEntry(150, EMPTY_STATE)] };
+				},
+			},
+		} as Pick<SigrunHost, "conversations">;
+		const found = await replay(hostEntryReader(host), CID);
+		expect(found).toEqual({ tasks: state.tasks, nextId: state.nextId });
+		expect(seenCursors).toEqual([undefined, page2Cursor]);
+	});
 });
 
 describe("TodoLog", () => {
@@ -203,6 +235,21 @@ describe("TodoLog", () => {
 		log.forget(CID);
 		await log.get(CID);
 		expect(calls()).toBe(2);
+	});
+
+	it("a rejected seed is not cached: the next get retries the reader", async () => {
+		const state = seedState(1);
+		let calls = 0;
+		const read: EntryReader = async function* () {
+			calls += 1;
+			if (calls === 1) throw new Error("reader blew up");
+			yield snapshotEntry(1, state);
+		};
+		const log = new TodoLog(read);
+		await expect(log.get(CID)).rejects.toThrow("reader blew up");
+		// The rejection is not pinned: the retry re-reads and seeds.
+		expect(await log.get(CID)).toEqual({ tasks: state.tasks, nextId: state.nextId });
+		expect(calls).toBe(2);
 	});
 });
 

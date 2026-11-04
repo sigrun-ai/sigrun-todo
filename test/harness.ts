@@ -58,12 +58,12 @@ function createTestExtension(log: TodoLog) {
 					const json = details as unknown as JsonValue;
 					if (op.kind === "error") {
 						return {
-							content: [{ type: "text" as const, text: op.message }],
+							output: [{ type: "text" as const, text: op.message }],
 							isError: true,
 							details: json,
 						};
 					}
-					return { content: [{ type: "text" as const, text: "ok" }], details: json };
+					return { output: [{ type: "text" as const, text: "ok" }], details: json };
 				},
 			}),
 		],
