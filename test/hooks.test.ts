@@ -21,6 +21,7 @@ import {
 } from "@earendil-works/pi-ai/providers/faux";
 import type { Message } from "@earendil-works/pi-ai";
 import {
+	defineExtension,
 	type Conversation,
 	type ConversationId,
 	type EntryRecord,
@@ -51,8 +52,6 @@ function workRound(id: string): FauxResponseStep {
 	return fauxAssistantMessage(NOOP_ROUND, { stopReason: "toolUse", responseId: id });
 }
 
-const HOOKS_EXTENSION = { name: "todo-hooks" } as const;
-
 /** The `todo` ToolRegistration as installed in this harness's registry. */
 function todoRegistration(opened: OpenedHarness) {
 	const found = opened.registry
@@ -68,7 +67,6 @@ async function installHooks(
 	opened: OpenedHarness,
 	overrides?: Partial<TodoHooksDeps>,
 ): Promise<{ changed: ConversationId[] }> {
-	const { defineExtension } = await import("@earendil-works/pi-durable");
 	const changed: ConversationId[] = [];
 	const deps: TodoHooksDeps = {
 		log: opened.log,
@@ -77,7 +75,7 @@ async function installHooks(
 		...overrides,
 	};
 	opened.registry.install(
-		defineExtension({ name: HOOKS_EXTENSION.name, hooks: [createTodoHooks(deps)] }),
+		defineExtension({ name: "todo-hooks", hooks: [createTodoHooks(deps)] }),
 	);
 	return { changed };
 }
@@ -175,10 +173,10 @@ describe("todo generation hooks", () => {
 					{ type: "input", content: "create the tasks and work" },
 					BACKGROUND_CONTEXT,
 				);
+				// `done` resolves when the CONTINUATION's answer ends the run
+				// (the check path never calls endRun), so by here the check
+				// entry AND the extra work round are both committed.
 				expect((await submission.wait(BACKGROUND_CONTEXT)).status).toBe("done");
-				// The run is not settled yet — the continuation generation is
-				// still mid-run — but the check entry is committed. Assert now,
-				// before the continuation settles the submission set.
 				const checks = checkEntries(await transcriptOf(opened, root.id));
 				// Exactly one check: the continuation's own yield does not
 				// re-trigger even though a real work round happened after it —
@@ -274,7 +272,10 @@ describe("todo generation hooks", () => {
 			const opened = await openTodoHarness(
 				dir,
 				[
+					// Run 1: seed two open items with the real `todo` tool.
 					fauxAssistantMessage(CREATE_TWO, { stopReason: "toolUse" }),
+					fauxAssistantMessage("created"),
+					// Run 2 (todo no longer offered): one work round, then answer.
 					workRound("w1"),
 					fauxAssistantMessage("done"),
 					fauxAssistantMessage("ack"),
@@ -284,29 +285,47 @@ describe("todo generation hooks", () => {
 			await installHooks(opened);
 			try {
 				const root = await opened.harness.root(BACKGROUND_CONTEXT, {
-					// `tools` selects the enabled tool set by REGISTRATION
-					// object: `todo` is registered but never enabled, so the
-					// request's tool set — what `analyze` reads — lacks it.
-					agent: { model: opened.defaultModel, tools: { remove: [todoRegistration(opened)] } },
+					agent: { model: opened.defaultModel },
 				});
-				const submission = await root.submit(
+				// Run 1: the list is seeded NON-empty, so `openItems(state)` is
+				// non-empty in run 2 — the `offered` term of `shouldCheck` is the
+				// ONLY thing standing between this run and a check.
+				const first = await root.submit(
+					{ type: "input", content: "create the tasks" },
+					BACKGROUND_CONTEXT,
+				);
+				expect((await first.wait(BACKGROUND_CONTEXT)).status).toBe("done");
+				await root.waitForIdle(BACKGROUND_CONTEXT);
+				const seeded = await opened.log.get(root.id);
+				expect(seeded.tasks).toHaveLength(2);
+
+				// `tools` selects the enabled tool set by REGISTRATION object:
+				// from here on `todo` is registered but never enabled, so the
+				// request's tool set — what `analyze` reads — lacks it.
+				await root.configure(
+					{ tools: { remove: [todoRegistration(opened)] } },
+					BACKGROUND_CONTEXT,
+				);
+
+				const second = await root.submit(
 					{ type: "input", content: "work without the list" },
 					BACKGROUND_CONTEXT,
 				);
-				expect((await submission.wait(BACKGROUND_CONTEXT)).status).toBe("done");
+				expect((await second.wait(BACKGROUND_CONTEXT)).status).toBe("done");
 
-				// Items are open and a work round happened, yet a turn with no
-				// way to answer must never be checked.
-				expect(checkEntries(await transcriptOf(opened, root.id))).toHaveLength(0);
-				// The gating must be real: the request's tool set named
-				// only `noop` — `todo` was registered but never offered.
-				const systems = (await transcriptOf(opened, root.id)).filter(
+				// The premise is real: run 2's request tool set removed
+				// `todo` (the configure committed a `toolsRemoved` system
+				// entry), while the list still holds two open items.
+				const entries = await transcriptOf(opened, root.id);
+				const systems = entries.filter(
 					(e) => (e.model?.[0] as { role?: string } | undefined)?.role === "system",
 				);
-				expect(systems.length).toBeGreaterThan(0);
-				const toolsAdded = (systems[0]?.model?.[0] as { toolsAdded?: Array<{ name: string }> })
-					.toolsAdded;
-				expect(toolsAdded?.map((t) => t.name)).toEqual(["noop"]);
+				const removed = (systems.at(-1)?.model?.[0] as { toolsRemoved?: Array<{ name: string }> })
+					.toolsRemoved;
+				expect(removed?.map((t) => t.name)).toEqual(["todo"]);
+				// Items are open and a work round happened, yet a turn with no
+				// way to answer must never be checked.
+				expect(checkEntries(entries)).toHaveLength(0);
 				await root.waitForIdle(BACKGROUND_CONTEXT);
 			} finally {
 				await closeOpened(opened);
