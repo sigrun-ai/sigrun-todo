@@ -159,6 +159,7 @@ describe("render and data", () => {
 		expect(rendered.access).toBe("read");
 		expect(rendered.data.total).toBe(2);
 		expect(rendered.data.done).toBe(1);
+		expect(rendered.data.summary).toBe("**1/2** done");
 
 		const items = rendered.data.items as Record<string, unknown>[];
 		// The spec pins the panel's order: tasks in id order.

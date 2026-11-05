@@ -67,12 +67,25 @@ function toolResultEntry(
 	};
 }
 
+/**
+ * A `toolResult` message with snapshot-shaped `details` but NO `isError`
+ * field: a foreign/malformed entry replay must ignore, never adopt.
+ */
+function noIsErrorEntry(id: number, details: unknown): EntryRecord {
+	const message = toolResultMessage(id, "todo", false, details) as Record<string, unknown>;
+	delete message.isError;
+	return {
+		id: id as EntryId,
+		conversationId: CID,
+		kind: "pi.tool-result",
+		model: [message as ToolResultMessage],
+	};
+}
+
 /** A synthetic bookkeeping entry (`pi.reset`, `pi.compaction`, …). */
 function markerEntry(id: number, kind: string): EntryRecord {
 	return { id: id as EntryId, conversationId: CID, kind };
-}
-
-/**
+}/**
  * An array-backed {@link EntryReader}: the newest entry FIRST, exactly as a
  * descending scan yields it. `calls` records each invocation.
  */
@@ -116,7 +129,8 @@ describe("replay", () => {
 	it("ignores error results and other tools", async () => {
 		const state = seedState(1);
 		const { read } = arrayReader([
-			toolResultEntry(5, "todo", true, { ...seedState(9), action: "create" }), // error: skip
+			toolResultEntry(6, "todo", true, { ...seedState(9), action: "create" }), // error: skip
+			noIsErrorEntry(5, { ...seedState(9), action: "create" }), // isError absent: skip
 			toolResultEntry(4, "other_tool", false, { ...seedState(9), action: "create" }), // wrong tool: skip
 			toolResultEntry(3, "todo", false, { garbage: true }), // malformed details: skip
 			snapshotEntry(2, state),

@@ -27,15 +27,16 @@ supported`).
 - **The `todo` tool** (model-only): one call per unit of work —
   `create`/`update`/`delete`, `in_progress` when the agent starts an item,
   `completed` when it is done.
-- **The Todos panel** in the conversation's right panel: the open items,
-  with a spinner and the agent's `activeForm` label on the item in flight,
-  completed items greyed (`neutral`) but visible, and a `done/total` line.
+- **The Todos panel** in the conversation's right panel: the full list in
+  id order, with a spinner and the agent's `activeForm` label on the item
+  in flight, completed items greyed (`neutral`) but visible, and a
+  `done/total` line.
   Deleted items are tombstones — they never appear and do not count.
 - **The freshness checks.** The list belongs to the work, and the extension
   nudges the agent to keep it current:
-  - *End-of-turn check*: when a run ends after tool rounds have passed since
-    the last `todo` call while items are still open, the run continues once
-    with a check message.
+  - *End-of-turn check*: when a run ends having done tool rounds since it
+    last touched the list (or since the run started, if it never did) while
+    items are still open, the run continues once with a check message.
   - *Mid-run reminder*: every `reminderRounds` work rounds without a `todo`
     call, a one-request reminder lists the open items.
   - The check always offers three honest answers — mark it completed, delete

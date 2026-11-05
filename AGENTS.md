@@ -77,6 +77,7 @@ npm run build       # tsc -> dist/ (commit the result)
   hosts, tokens, or private URLs in fixtures.
 - Host modules (`@earendil-works/*`) are peerDependencies; development pins
   exact devDependencies. The `dependencies` field stays empty.
-- The `@sigrun/*` devDependencies ARE committed `file:` links to the sibling
-  checkouts (`../sigrun`, `../sigrun/shared`): development-only pins, never
-  shipped — they live in `devDependencies` and `dependencies` stays empty.
+- Keep the `@sigrun/*` devDependencies as `file:` links to the sibling
+  checkouts (`../sigrun`, `../sigrun/shared`) and keep `dependencies`
+  empty; `scripts/check-manifest.mjs` (part of `npm test`) enforces the
+  published shape.

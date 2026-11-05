@@ -12,8 +12,10 @@
  *   reminder to the messages it returns — that request only, never a
  *   transcript entry.
  * - `onYield` fires the end-of-turn check: read AND DELETE the stashed view
- *   (the next request's `beforeRequest` overwrites it anyway), and when
- *   {@link shouldCheck} holds, continue the run with the check message.
+ *   (memory hygiene — one entry per conversation, dropped on every yield
+ *   whether or not a continuation is returned, since the view is otherwise
+ *   never re-read for that run), and when {@link shouldCheck} holds,
+ *   continue the run with the check message.
  *
  * Once-per-run needs no state of its own: after the check's continuation,
  * the check message is the run's last user message, so `lastUserIsCheck`
