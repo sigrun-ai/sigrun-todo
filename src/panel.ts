@@ -23,7 +23,7 @@ import type {
 	SurfaceDataResult,
 	SurfaceRenderResult,
 } from "@sigrun/sigrun/extension";
-import { bind, card, collection, markdown, page, tree } from "@sigrun/sigrun/blocks";
+import type { Block, Card, Tree } from "@sigrun/shared/blocks";
 import type { TodoLog } from "./log.js";
 import type { Task } from "./types.js";
 
@@ -131,30 +131,45 @@ export function createTodoPanel(deps: TodoPanelDeps): SurfaceDef<"panel"> {
 		return { access: "read", data: dataOf(state.tasks) };
 	}
 
-	function treeFor() {
-		return tree(
-			page({
+	/**
+	 * The panel tree, built as a PLAIN object — the same shape
+	 * `~/repos/sigrun-escalations` emits. Deliberately not the host's
+	 * `tree()`/`page()`/`card()` builders: those are a RUNTIME import of
+	 * `@sigrun/sigrun/blocks`, which an extension installed from the npm
+	 * registry cannot resolve (the host package is not a dependency of an
+	 * extension — it is the host). `v` is the block-set version the
+	 * server validates against (`BLOCK_SET_VERSION`, currently 1).
+	 */
+	function treeFor(): Tree {
+		const card: Card = {
+			title: { $: "./title" },
+			subtitle: { $: "./subtitle" },
+			status: {
+				label: { $: "./status.label" },
+				spinner: { $: "./status.spinner" },
+			},
+			tone: { $: "./tone" },
+			deps: { $: "./deps" },
+		};
+		const main: Block[] = [
+			{ type: "markdown", text: { $: "/summary" } },
+			{
+				type: "collection",
+				id: "todos-list",
+				display: "list",
+				items: { $: "/items" },
+				item: card,
+			},
+		];
+		return {
+			v: 1,
+			root: {
+				type: "page",
 				title: "Todos",
-				main: [
-					markdown({ text: bind("/summary") }),
-					collection({
-						display: "list",
-						items: bind("/items"),
-						item: card({
-							title: bind("./title"),
-							subtitle: bind("./subtitle"),
-							status: {
-								label: bind("./status.label"),
-								spinner: bind("./status.spinner"),
-							},
-							tone: bind("./tone"),
-							deps: bind("./deps"),
-						}),
-					}),
-				],
+				main,
 				empty: { icon: "list", title: "No tasks yet", hint: "The agent keeps this list." },
-			}),
-		);
+			},
+		};
 	}
 
 	return {

@@ -14,7 +14,6 @@
  * - The tree is a `page` (no sidebar — panel placement) with a markdown
  *   `done/total` line and a list `collection` bound to `/items`.
  */
-import { bind, card, collection, markdown, page, tree } from "@sigrun/sigrun/blocks";
 /** The empty panel: no rows, whatever the access path that led here. */
 const EMPTY_DATA = { done: 0, total: 0, summary: "**0/0** done", items: [] };
 /**
@@ -89,28 +88,45 @@ export function createTodoPanel(deps) {
         // Tasks render in state (id) order; the spec pins the panel to it.
         return { access: "read", data: dataOf(state.tasks) };
     }
+    /**
+     * The panel tree, built as a PLAIN object — the same shape
+     * `~/repos/sigrun-escalations` emits. Deliberately not the host's
+     * `tree()`/`page()`/`card()` builders: those are a RUNTIME import of
+     * `@sigrun/sigrun/blocks`, which an extension installed from the npm
+     * registry cannot resolve (the host package is not a dependency of an
+     * extension — it is the host). `v` is the block-set version the
+     * server validates against (`BLOCK_SET_VERSION`, currently 1).
+     */
     function treeFor() {
-        return tree(page({
-            title: "Todos",
-            main: [
-                markdown({ text: bind("/summary") }),
-                collection({
-                    display: "list",
-                    items: bind("/items"),
-                    item: card({
-                        title: bind("./title"),
-                        subtitle: bind("./subtitle"),
-                        status: {
-                            label: bind("./status.label"),
-                            spinner: bind("./status.spinner"),
-                        },
-                        tone: bind("./tone"),
-                        deps: bind("./deps"),
-                    }),
-                }),
-            ],
-            empty: { icon: "list", title: "No tasks yet", hint: "The agent keeps this list." },
-        }));
+        const card = {
+            title: { $: "./title" },
+            subtitle: { $: "./subtitle" },
+            status: {
+                label: { $: "./status.label" },
+                spinner: { $: "./status.spinner" },
+            },
+            tone: { $: "./tone" },
+            deps: { $: "./deps" },
+        };
+        const main = [
+            { type: "markdown", text: { $: "/summary" } },
+            {
+                type: "collection",
+                id: "todos-list",
+                display: "list",
+                items: { $: "/items" },
+                item: card,
+            },
+        ];
+        return {
+            v: 1,
+            root: {
+                type: "page",
+                title: "Todos",
+                main,
+                empty: { icon: "list", title: "No tasks yet", hint: "The agent keeps this list." },
+            },
+        };
     }
     return {
         id: "todos",
