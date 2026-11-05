@@ -16,7 +16,7 @@
  */
 import { bind, card, collection, markdown, page, tree } from "@sigrun/sigrun/blocks";
 /** The empty panel: no rows, whatever the access path that led here. */
-const EMPTY_DATA = { done: 0, total: 0, items: [] };
+const EMPTY_DATA = { done: 0, total: 0, summary: "**0/0** done", items: [] };
 /**
  * The conversation id of a `perConversation` params object, or `undefined`:
  * a positive integer `conversationId`, nothing else. The value is
@@ -62,6 +62,7 @@ function dataOf(tasks) {
     return {
         done: visible.filter((task) => task.status === "completed").length,
         total: visible.length,
+        summary: `**${visible.filter((task) => task.status === "completed").length}/${visible.length}** done`,
         items: visible.map(rowOf),
     };
 }
@@ -98,7 +99,7 @@ export function createTodoPanel(deps) {
         return tree(page({
             title: "Todos",
             main: [
-                markdown({ text: "**" + String(data.done) + "/" + String(data.total) + "** done" }),
+                markdown({ text: bind("/summary") }),
                 collection({
                     display: "list",
                     items: bind("/items"),

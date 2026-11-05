@@ -108,11 +108,11 @@ describe("render and data", () => {
 		const { panel } = await setup();
 		const rendered = await panel.render(contextFor({}));
 		expect(rendered.access).toBe("read");
-		expect(rendered.data).toEqual({ done: 0, total: 0, items: [] });
+		expect(rendered.data).toEqual({ done: 0, total: 0, summary: "**0/0** done", items: [] });
 		expect(rendered.tree.root).toMatchObject({ type: "page", title: "Todos" });
 
 		const data = await panel.data!(contextFor({}));
-		expect(data).toEqual({ access: "read", data: { done: 0, total: 0, items: [] } });
+		expect(data).toEqual({ access: "read", data: { done: 0, total: 0, summary: "**0/0** done", items: [] } });
 	});
 
 	it("a principal without access gets none", async () => {
