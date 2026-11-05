@@ -16,7 +16,8 @@
 	},
 	"files": [
 		"dist",
-		"CHANGELOG.md"
+		"CHANGELOG.md",
+		"THIRD_PARTY_NOTICES.md"
 	],
 	"scripts": {
 		"test": "node scripts/check-manifest.mjs --expect-name @sigrun/todo && vitest run",

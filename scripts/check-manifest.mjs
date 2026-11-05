@@ -54,6 +54,13 @@ check(
 	`package.json: publishConfig must be {"access":"public","provenance":true} (got ${JSON.stringify(manifest.publishConfig)})`,
 );
 check(Array.isArray(manifest.files) && manifest.files.length > 0, "package.json: files whitelist is absent/empty");
+/** MIT requires the copyright notice to travel with the copies: this
+ * repo ships code ported from rpiv-todo, so the notices file must be in
+ * the published tarball, not just the repo. */
+check(
+	Array.isArray(manifest.files) && manifest.files.includes("THIRD_PARTY_NOTICES.md"),
+	'package.json: files must include "THIRD_PARTY_NOTICES.md" (MIT attribution ships with the ported code)',
+);
 check(
 	typeof manifest.repository?.url === "string" && manifest.repository.url.startsWith("git+https://github.com/sigrun-ai/"),
 	`package.json: repository.url must point at github.com/sigrun-ai/<repo> (got ${JSON.stringify(manifest.repository?.url)})`,
