@@ -5,7 +5,7 @@
  * `roundsSinceTouch = 3`, where a setting of 3 reminds and 6 stays quiet.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import {
@@ -18,7 +18,13 @@ import {
 } from "@earendil-works/pi-ai";
 import type { ConversationId, HookApi, ToolExecutionApi } from "@earendil-works/pi-durable";
 import createTodo from "../src/index.js";
-import { createFakeHost } from "./fake-host.js";
+import { createFakeHost, type FakeHost } from "./fake-host.js";
+
+const hosts: FakeHost[] = [];
+
+afterEach(async () => {
+	await Promise.all(hosts.splice(0).map((host) => host.cleanup()));
+});
 
 const CID = 1 as ConversationId;
 
@@ -67,6 +73,7 @@ async function remindResult(
 	settings: Record<string, unknown>,
 ): Promise<{ messages: readonly Message[] } | undefined> {
 	const host = await createFakeHost({ settings });
+	hosts.push(host);
 	const result = createTodo(host);
 	const tool = result.extension!.tools!.find((t) => t.name === "todo")!;
 	await tool.execute(

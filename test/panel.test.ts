@@ -15,8 +15,9 @@
  *   state at `read`.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { canonicalJson } from "@sigrun/shared/blocks";
+import { validateTree } from "@sigrun/sigrun/blocks";
 import type { ConversationId } from "@earendil-works/pi-durable";
 import type { SurfaceContext } from "@sigrun/sigrun/extension";
 import { TodoLog, type EntryReader } from "../src/log.js";
@@ -49,11 +50,18 @@ function contextFor(params: Record<string, unknown>): SurfaceContext {
 	} as unknown as SurfaceContext;
 }
 
+const hosts: FakeHost[] = [];
+
+afterEach(async () => {
+	await Promise.all(hosts.splice(0).map((host) => host.cleanup()));
+});
+
 async function setup(opts?: { access?: "none" | "read" | "write"; unknown?: boolean }) {
 	const host: FakeHost = await createFakeHost({
 		...(opts?.access === undefined ? {} : { access: opts.access }),
 		unknownConversations: opts?.unknown === true ? [CID] : [],
 	});
+	hosts.push(host);
 	const log = new TodoLog(emptyRead);
 	return { host, log, panel: createTodoPanel({ host, log }) };
 }
@@ -153,15 +161,37 @@ describe("render and data", () => {
 		expect(rendered.data.done).toBe(1);
 
 		const items = rendered.data.items as Record<string, unknown>[];
-		expect(items.map((item) => item.title)).toEqual(["Live task", "Done task"]);
+		// The spec pins the panel's order: tasks in id order.
+		expect(items.map((item) => item.title)).toEqual(["Done task", "Live task"]);
 
-		const live = items[0]!;
-		expect(live.status).toMatchObject({ label: "Wiring the panel", spinner: true });
-		expect(live.deps).toEqual(["1"]);
-		const done = items[1]!;
+		const done = items[0]!;
 		expect(done.tone).toBe("neutral");
 		expect(done.quiet).not.toBe(true);
 		expect(done.subtitle).toBe("shipped");
+		const live = items[1]!;
+		expect(live.status).toMatchObject({ label: "Wiring the panel", spinner: true });
+		expect(live.deps).toEqual(["1"]);
+	});
+
+	it("renders a mixed list in id order (completed, in progress, pending)", async () => {
+		const { log, panel } = await setup();
+		await seed(log, { id: 1, subject: "Completed first", status: "completed" });
+		await seed(log, {
+			id: 2,
+			subject: "In progress second",
+			status: "in_progress",
+			activeForm: "Working",
+		});
+		await seed(log, { id: 3, subject: "Pending third", status: "pending" });
+
+		const rendered = await panel.render(contextFor({ conversationId: 7 }));
+		const items = rendered.data.items as Record<string, unknown>[];
+		expect(items.map((item) => item.id)).toEqual(["1", "2", "3"]);
+		expect(items.map((item) => item.title)).toEqual([
+			"Completed first",
+			"In progress second",
+			"Pending third",
+		]);
 	});
 
 	it("an in_progress task without activeForm falls back to the label", async () => {
@@ -177,6 +207,12 @@ describe("render and data", () => {
 		await seed(log, { id: 1, subject: "Only", status: "pending" });
 		const rendered = await panel.render(contextFor({ conversationId: 7 }));
 
+		// The REAL validator: a tree that broke the block contract would
+		// render fine in every assertion below and fail on the wire.
+		expect(
+			validateTree(rendered.tree, { placement: "panel", handlers: new Set() }).ok,
+		).toBe(true);
+
 		const root = rendered.tree.root as unknown as {
 			type: string;
 			main: { type: string }[];
@@ -190,6 +226,23 @@ describe("render and data", () => {
 			item: { title: unknown };
 		};
 		expect(collectionBlockShape(collectionBlock)).toBe(true);
+	});
+
+	it("the card template binds every slot the panel renders", async () => {
+		const { panel } = await setup();
+		const rendered = await panel.render(contextFor({}));
+
+		const root = rendered.tree.root as unknown as { main: unknown[] };
+		const collectionBlock = root.main[1] as { item: Record<string, unknown> };
+		const item = collectionBlock.item;
+		expect(item.title).toEqual({ $: "./title" });
+		expect(item.subtitle).toEqual({ $: "./subtitle" });
+		expect(item.tone).toEqual({ $: "./tone" });
+		expect(item.deps).toEqual({ $: "./deps" });
+		expect(item.status).toEqual({
+			label: { $: "./status.label" },
+			spinner: { $: "./status.spinner" },
+		});
 	});
 
 	it("a conversation with no visible items renders the empty state", async () => {

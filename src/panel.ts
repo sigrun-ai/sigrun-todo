@@ -127,17 +127,11 @@ export function createTodoPanel(deps: TodoPanelDeps): SurfaceDef<"panel"> {
 		const access = await host.access.accessOf(ctx.principal, meta);
 		if (access === "none") return { access: "none", data: EMPTY_DATA };
 		const state = await log.get(id);
-		const data = dataOf(state.tasks);
-		// Open work first; completed rows trail, neutral but never hidden.
-		data.items = [...data.items].sort((a, b) => {
-			const aDone = a.tone === "neutral" ? 1 : 0;
-			const bDone = b.tone === "neutral" ? 1 : 0;
-			return aDone - bDone;
-		});
-		return { access: "read", data };
+		// Tasks render in state (id) order; the spec pins the panel to it.
+		return { access: "read", data: dataOf(state.tasks) };
 	}
 
-	function treeFor(data: TodoPanelData) {
+	function treeFor() {
 		return tree(
 			page({
 				title: "Todos",
@@ -174,7 +168,7 @@ export function createTodoPanel(deps: TodoPanelDeps): SurfaceDef<"panel"> {
 		async render(ctx: SurfaceContext): Promise<SurfaceRenderResult> {
 			const { access, data } = await resolve(ctx);
 			return {
-				tree: treeFor(data),
+				tree: treeFor(),
 				data: data as unknown as SurfaceRenderResult["data"],
 				access,
 			};

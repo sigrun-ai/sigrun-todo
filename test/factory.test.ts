@@ -6,17 +6,28 @@
  * reminder.test.ts, which drives the real `beforeRequest` handler.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { ConversationId, ToolExecutionApi } from "@earendil-works/pi-durable";
 import createTodo from "../src/index.js";
-import { createFakeHost } from "./fake-host.js";
+import { createFakeHost, type FakeHost } from "./fake-host.js";
+
+const hosts: FakeHost[] = [];
+
+afterEach(async () => {
+	await Promise.all(hosts.splice(0).map((host) => host.cleanup()));
+});
 
 const CID = 7 as ConversationId;
 
 describe("createTodo", () => {
+	it("takes the host at arity one (the loader's factory.length gate)", async () => {
+		expect(createTodo.length).toBe(1);
+	});
+
 	it("declares the todo extension: one tool, one section, one hook bundle", async () => {
 		const host = await createFakeHost();
+		hosts.push(host);
 		const result = createTodo(host);
 
 		expect(result.extension!.name).toBe("todo");
@@ -28,6 +39,7 @@ describe("createTodo", () => {
 
 	it("declares one perConversation `todos` panel", async () => {
 		const host = await createFakeHost();
+		hosts.push(host);
 		const result = createTodo(host);
 
 		const panels = result.surfaces?.panels ?? [];
@@ -39,6 +51,7 @@ describe("createTodo", () => {
 
 	it("a todo tool change notifies the panel with the canonical instance key", async () => {
 		const host = await createFakeHost();
+		hosts.push(host);
 		const result = createTodo(host);
 		const tool = result.extension!.tools!.find((tool) => tool.name === "todo")!;
 
@@ -56,6 +69,7 @@ describe("createTodo", () => {
 
 	it("runSettled notifies the panel once for a changed round (the aborted-round path)", async () => {
 		const host = await createFakeHost();
+		hosts.push(host);
 		const result = createTodo(host);
 		const tool = result.extension!.tools!.find((tool) => tool.name === "todo")!;
 
@@ -85,6 +99,7 @@ describe("createTodo", () => {
 
 	it("runSettled is quiet for a conversation whose list never changed", async () => {
 		const host = await createFakeHost();
+		hosts.push(host);
 		const result = createTodo(host);
 		await result.runSettled!(
 			{

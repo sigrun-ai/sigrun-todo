@@ -77,4 +77,6 @@ npm run build       # tsc -> dist/ (commit the result)
   hosts, tokens, or private URLs in fixtures.
 - Host modules (`@earendil-works/*`) are peerDependencies; development pins
   exact devDependencies. The `dependencies` field stays empty.
-- Local `@sigrun/*` development links are not committed.
+- The `@sigrun/*` devDependencies ARE committed `file:` links to the sibling
+  checkouts (`../sigrun`, `../sigrun/shared`): development-only pins, never
+  shipped — they live in `devDependencies` and `dependencies` stays empty.

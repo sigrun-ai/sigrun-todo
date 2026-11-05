@@ -17,6 +17,11 @@ Add the extension to `extensions[]` in the sigrun settings file and restart:
 (a git source — `git:host/path[@ref]` — works too; the repo's committed
 `dist/` is what git-source installs load.)
 
+Until `@sigrun/todo` is published, install from a local path pointing at the
+BUILT entry — `"/path/to/sigrun-todo/dist/index.js"` in `extensions[]` —
+because the loader rejects a bare directory path (`Directory import … is not
+supported`).
+
 ## What you get
 
 - **The `todo` tool** (model-only): one call per unit of work —
@@ -28,15 +33,14 @@ Add the extension to `extensions[]` in the sigrun settings file and restart:
   Deleted items are tombstones — they never appear and do not count.
 - **The freshness checks.** The list belongs to the work, and the extension
   nudges the agent to keep it current:
-  - *End-of-turn check*: when a run ends with open items the agent never
-    touched, the run continues once with a check message asking the agent to
-    account for every open item.
+  - *End-of-turn check*: when a run ends after tool rounds have passed since
+    the last `todo` call while items are still open, the run continues once
+    with a check message.
   - *Mid-run reminder*: every `reminderRounds` work rounds without a `todo`
     call, a one-request reminder lists the open items.
-  - Both offer three honest answers — mark it completed, delete it as
-    obsolete, or keep it open with a note saying why. The second option of a
-    check is always "keep it open with a note"; the checks never push a model
-    to fabricate progress.
+  - The check always offers three honest answers — mark it completed, delete
+    it as obsolete, or keep it open with a note saying why; the checks never
+    push a model to fabricate progress.
 
 ## Settings
 

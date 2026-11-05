@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ConversationId } from "@earendil-works/pi-durable";
-import type { Principal, SigrunHost } from "@sigrun/sigrun/extension";
+import type { SigrunHost } from "@sigrun/sigrun/extension";
 import type { SessionMeta } from "@sigrun/shared/session-meta";
 
 export interface FakeCall {
@@ -157,7 +157,3 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 		},
 	};
 }
-
-// Kept visible at the fixture's import site for suites that construct
-// principal or meta values alongside the fake host.
-export type { Principal, SessionMeta };
