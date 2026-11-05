@@ -85,7 +85,9 @@ function noIsErrorEntry(id: number, details: unknown): EntryRecord {
 /** A synthetic bookkeeping entry (`pi.reset`, `pi.compaction`, …). */
 function markerEntry(id: number, kind: string): EntryRecord {
 	return { id: id as EntryId, conversationId: CID, kind };
-}/**
+}
+
+/**
  * An array-backed {@link EntryReader}: the newest entry FIRST, exactly as a
  * descending scan yields it. `calls` records each invocation.
  */
