@@ -1,5 +1,6 @@
 import { type Static, Type } from "typebox";
 import { detectCycle } from "./graph.js";
+import type { Task, TaskStatus, TodoState } from "./types.js";
 
 /**
  * Flat `{type:"string",enum:[...]}` — the provider-compatible string-enum wire
@@ -18,7 +19,6 @@ function stringEnum<T extends readonly string[]>(
 		enum: [...values],
 	});
 }
-import type { Task, TaskStatus, TodoState } from "./types.js";
 
 /**
  * Reducer outcome. Closed tagged union: a new action must extend this union AND

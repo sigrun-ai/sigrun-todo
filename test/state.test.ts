@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTodo, changesState, type Op } from "../src/state.js";
+import { applyTodo, changesState, type Op, TodoParamsSchema } from "../src/state.js";
 import { EMPTY_STATE, type TodoState } from "../src/types.js";
 
 /** Create one task and return the resulting state plus its id. */
@@ -341,5 +341,24 @@ describe("clear", () => {
 
 		const recreated = applyTodo(result.state, { action: "create", subject: "After clear" });
 		expect(recreated.op).toEqual({ kind: "create", taskIds: [4] });
+	});
+});
+
+describe("TodoParamsSchema wire shape", () => {
+	// The vendored stringEnum exists to keep the FLAT provider-compatible
+	// enum shape pi-ai's StringEnum emitted ({type:"string",enum:[...]}).
+	// Google's API rejects anyOf/const unions — a refactor to
+	// Type.Union([Type.Literal(...)]) would silently break those providers.
+	it("action and status are flat string enums, never anyOf/const unions", () => {
+		const action = TodoParamsSchema.properties.action as unknown as Record<string, unknown>;
+		expect(action).toEqual({
+			type: "string",
+			enum: ["create", "update", "list", "get", "delete", "clear"],
+		});
+		expect(action["anyOf"]).toBeUndefined();
+		const status = (TodoParamsSchema.properties as unknown as Record<string, Record<string, unknown>>)["status"];
+		expect(status["type"]).toBe("string");
+		expect(status["enum"]).toEqual(["pending", "in_progress", "completed", "deleted"]);
+		expect(status["anyOf"]).toBeUndefined();
 	});
 });
