@@ -1,4 +1,4 @@
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 import type { Task, TaskStatus, TodoState } from "./types.js";
 /**
  * Reducer outcome. Closed tagged union: a new action must extend this union AND

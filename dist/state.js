@@ -1,5 +1,19 @@
-import { StringEnum, Type } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
 import { detectCycle } from "./graph.js";
+/**
+ * Flat `{type:"string",enum:[...]}` — the provider-compatible string-enum wire
+ * shape pi-ai's StringEnum emitted (Google's API rejects anyOf/const unions).
+ * Vendored for pi-durable 1.5.0, where pi-ai no longer re-exports schema
+ * helpers and extensions never runtime-import host packages.
+ */
+function stringEnum(values, options) {
+    return Type.Unsafe({
+        ...(options?.description ? { description: options.description } : {}),
+        ...(options?.default !== undefined ? { default: options.default } : {}),
+        type: "string",
+        enum: [...values],
+    });
+}
 /**
  * True when `op` changed the task state — the calls whose post-change snapshot
  * must be persisted for replay. Reads, failures and a no-effect `update` leave
@@ -48,13 +62,13 @@ const CreateTaskItemSchema = Type.Object({
  * copy, so the wording is part of the tool's behaviour.
  */
 export const TodoParamsSchema = Type.Object({
-    action: StringEnum(["create", "update", "list", "get", "delete", "clear"]),
+    action: stringEnum(["create", "update", "list", "get", "delete", "clear"]),
     subject: Type.Optional(Type.String({ description: "Task subject line (required for create unless tasks[] is set)" })),
     description: Type.Optional(Type.String({ description: "Long-form task description" })),
     activeForm: Type.Optional(Type.String({
         description: "Present-continuous spinner label shown while status is in_progress (e.g. 'writing tests')",
     })),
-    status: Type.Optional(StringEnum(["pending", "in_progress", "completed", "deleted"], {
+    status: Type.Optional(stringEnum(["pending", "in_progress", "completed", "deleted"], {
         description: "Set this task's status (update): one of pending, in_progress, completed, deleted. When action is list, filters returned tasks by this status.",
     })),
     blockedBy: Type.Optional(Type.Array(Type.Number(), { description: "Initial blockedBy ids (create only)" })),

@@ -109,13 +109,18 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 		services: { connect: notUsed() },
 		seedInteraction: notUsed(),
 		answerInteraction: notUsed(),
+		declineInteraction: notUsed(),
 		settleInteraction: notUsed(),
 		peekInteraction: notUsed(),
 		snapshotInteraction: notUsed(),
 		setAmbient: notUsed(),
 		clearAmbient: notUsed(),
 		conversations,
-		jobs: { get: notUsed() },
+		jobs: {
+			get: notUsed(),
+			activeRun: notUsed(),
+			isJobRun: notUsed(),
+		},
 		notify: notUsed(),
 		notices: { post: notUsed(), clear: notUsed(), list: notUsed() },
 		users: { list: notUsed(), get: notUsed() },
@@ -137,7 +142,9 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 				record("surfaces.changed", id, key, update);
 			},
 		},
-		models: { list: notUsed() },
+		models: { list: notUsed(), complete: notUsed() },
+		decisions: { evaluate: notUsed(), list: notUsed() },
+		publishedHooks: { get: notUsed(), call: notUsed() },
 		commands: { list: notUsed(), run: notUsed() },
 		curation: new Proxy({} as SigrunHost["curation"], {
 			get: () => {

@@ -1,5 +1,23 @@
-import { StringEnum, type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 import { detectCycle } from "./graph.js";
+
+/**
+ * Flat `{type:"string",enum:[...]}` — the provider-compatible string-enum wire
+ * shape pi-ai's StringEnum emitted (Google's API rejects anyOf/const unions).
+ * Vendored for pi-durable 1.5.0, where pi-ai no longer re-exports schema
+ * helpers and extensions never runtime-import host packages.
+ */
+function stringEnum<T extends readonly string[]>(
+	values: T,
+	options?: { description?: string; default?: T[number] },
+) {
+	return Type.Unsafe<T[number]>({
+		...(options?.description ? { description: options.description } : {}),
+		...(options?.default !== undefined ? { default: options.default } : {}),
+		type: "string",
+		enum: [...values],
+	});
+}
 import type { Task, TaskStatus, TodoState } from "./types.js";
 
 /**
@@ -76,7 +94,7 @@ const CreateTaskItemSchema = Type.Object({
  * copy, so the wording is part of the tool's behaviour.
  */
 export const TodoParamsSchema = Type.Object({
-	action: StringEnum(["create", "update", "list", "get", "delete", "clear"] as const),
+	action: stringEnum(["create", "update", "list", "get", "delete", "clear"] as const),
 	subject: Type.Optional(
 		Type.String({ description: "Task subject line (required for create unless tasks[] is set)" }),
 	),
@@ -87,7 +105,7 @@ export const TodoParamsSchema = Type.Object({
 		}),
 	),
 	status: Type.Optional(
-		StringEnum(["pending", "in_progress", "completed", "deleted"] as const, {
+		stringEnum(["pending", "in_progress", "completed", "deleted"] as const, {
 			description:
 				"Set this task's status (update): one of pending, in_progress, completed, deleted. When action is list, filters returned tasks by this status.",
 		}),

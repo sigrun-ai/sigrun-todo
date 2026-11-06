@@ -8,8 +8,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
+import { Type } from "typebox";
 import {
-	Type,
 	type AssistantMessage,
 	type Message,
 	type SystemMessage,

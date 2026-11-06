@@ -13,8 +13,8 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { Type } from "typebox";
 import {
-	Type,
 	type AssistantMessage,
 	type Message,
 	type SystemMessage,
