@@ -18,7 +18,7 @@ import {
 	fauxProvider,
 } from "@earendil-works/pi-ai/providers/faux";
 import { createModels } from "@earendil-works/pi-ai/models";
-import { Type } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
 import {
 	createRegistry,
 	defineExtension,

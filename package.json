@@ -1,6 +1,6 @@
 {
 	"name": "@sigrun/todo",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Agent-kept task list for sigrun: a todo list the agent owns, rendered in a conversation panel",
 	"type": "module",
 	"engines": {
@@ -26,21 +26,23 @@
 		"prepublishOnly": "npm run build"
 	},
 	"peerDependencies": {
-		"@earendil-works/chord": "1.3.0 || 1.4.0",
-		"@earendil-works/pi-ai": "1.3.0 || 1.4.0",
-		"@earendil-works/pi-durable": "1.3.0 || 1.4.0"
+		"@earendil-works/chord": "~1.5.0",
+		"@earendil-works/pi-ai": "~1.5.0",
+		"@earendil-works/pi-durable": "~1.5.0",
+		"typebox": "1.3.27"
 	},
 	"dependencies": {},
 	"devDependencies": {
-		"@earendil-works/chord": "1.4.0",
-		"@earendil-works/pi-ai": "1.4.0",
-		"@earendil-works/pi-durable": "1.4.0",
+		"@earendil-works/chord": "1.5.0",
+		"@earendil-works/pi-ai": "1.5.0",
+		"@earendil-works/pi-durable": "1.5.0",
 		"@sigrun/sigrun": "file:../sigrun",
 		"@sigrun/shared": "file:../sigrun/shared",
 		"@types/node": "^26.6.4",
 		"tsx": "^4.23.15",
 		"typescript": "^7.0.2",
-		"vitest": "^5.0.3"
+		"vitest": "^5.0.3",
+		"typebox": "1.3.27"
 	},
 	"license": "MIT",
 	"repository": {
