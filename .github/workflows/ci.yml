@@ -3,6 +3,7 @@
 # drift across the family repos. needs-core: true (the @sigrun/sigrun and
 # @sigrun/shared devDeps are file: links to sibling checkouts, so core is
 # checked out at `sigrun` and built before this repo's install).
+# core-ref: release tests against the latest released core.
 name: ci
 
 on:
@@ -18,3 +19,4 @@ jobs:
     uses: sigrun-ai/sigrun/.github/workflows/ext-ci.yml@main
     with:
       needs-core: true
+      core-ref: release
