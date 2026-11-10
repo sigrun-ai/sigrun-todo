@@ -2,7 +2,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ConversationId } from "@earendil-works/pi-durable";
-import type { SigrunHost } from "@sigrun/sigrun/extension";
+import type { SettingsDeclaration, SigrunHost } from "@sigrun/sigrun/extension";
+import { checkStoredSettings } from "@sigrun/sigrun/settings-schema";
 import type { SessionMeta } from "@sigrun/shared/session-meta";
 
 export interface FakeCall {
@@ -81,6 +82,13 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 	};
 
 	const host: SigrunHost = {
+		embeddings: { embed: notUsed(), list: notUsed() },
+		settings: {
+			declare: <S, U>(declaration: SettingsDeclaration) => ({
+				get: async () => checkStoredSettings(declaration.schema, opts.settings ?? {}).value as S,
+				user: notUsed() as (user: string) => { get(): Promise<U> },
+			}),
+		},
 		stores: {
 			user: (user) => ({
 				secrets: { get: notUsed(), set: notUsed(), delete: notUsed() },
@@ -91,7 +99,7 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 					cache: join(root, "cache", "users", user),
 				},
 			}),
-			secrets: { get: notUsed(), set: notUsed() },
+			secrets: { get: notUsed(), set: notUsed(), delete: notUsed() },
 			settings: {
 				get: async () => {
 					record("stores.settings.get");

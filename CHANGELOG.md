@@ -11,10 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3] - 2026-11-07
 
-## [Unreleased]
+## [0.1.5] - 2026-11-10
 
 ### Changed
 
+- Settings are declared as JSON Schema through `host.settings.declare`
+  (requires sigrun 0.13.0): the operator's `reminderRounds` key now drives a
+  generated settings form. The schema carries the old parser's contract — a
+  positive integer is honoured, anything else falls back to the default of
+  6 — so an existing `settings/sigrun-todo.json` loads unchanged.
 - peer pi-durable/pi-ai/chord ~1.5.0 (requires sigrun 0.11.0).
 
 ## [0.1.2] - 2026-11-05

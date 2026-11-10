@@ -12,14 +12,14 @@ import { createTodoHooks } from "./hooks.js";
 import { TodoLog, hostEntryReader } from "./log.js";
 import { createTodoPanel, panelKey } from "./panel.js";
 import { todoSection } from "./section.js";
+import { TODO_SETTINGS_SCHEMA } from "./settings-schema.js";
 import { createTodoTool } from "./tool.js";
-/** The default mid-run reminder cadence (rounds between reminders). */
-const DEFAULT_REMINDER_ROUNDS = 6;
 /**
  * The todo extension: an agent-kept task list with a per-conversation panel.
  * The required host parameter keeps the factory at arity one for the loader.
  */
 export default function createTodo(host) {
+    const settings = host.settings.declare({ schema: TODO_SETTINGS_SCHEMA });
     // ONE log: the tool's mutations, the hooks' freshness reads, and the
     // panel's renders must see the same cache so `settle` re-reads the
     // transcript exactly once per round.
@@ -37,15 +37,9 @@ export default function createTodo(host) {
                 createTodoHooks({
                     ...deps,
                     // Read PER USE so an edit to the extension's settings applies
-                    // on the next request, without a reload. A positive integer is
-                    // the cadence; anything else is the default.
-                    reminderRounds: async () => {
-                        const settings = (await host.stores.settings.get());
-                        const value = settings?.reminderRounds;
-                        return typeof value === "number" && Number.isInteger(value) && value > 0
-                            ? value
-                            : DEFAULT_REMINDER_ROUNDS;
-                    },
+                    // on the next request, without a reload. The declared checked
+                    // read applies the default and repairs malformed values to it.
+                    reminderRounds: async () => (await settings.get()).reminderRounds,
                 }),
             ],
         }),
