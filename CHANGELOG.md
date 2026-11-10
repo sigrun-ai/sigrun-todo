@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3] - 2026-11-07
 
-## [Unreleased]
+## [0.1.5] - 2026-11-10
 
 ### Changed
 
