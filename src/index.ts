@@ -35,6 +35,7 @@ export default function createTodo(host: SigrunHost): SigrunExtensionResult {
 	const deps = { log, onChanged };
 
 	return {
+		title: "Todo",
 		extension: defineExtension({
 			name: "todo",
 			tools: [createTodoTool(deps)],

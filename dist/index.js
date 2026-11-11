@@ -29,6 +29,7 @@ export default function createTodo(host) {
     };
     const deps = { log, onChanged };
     return {
+        title: "Todo",
         extension: defineExtension({
             name: "todo",
             tools: [createTodoTool(deps)],

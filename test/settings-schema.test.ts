@@ -19,6 +19,7 @@ import { TODO_SETTINGS_SCHEMA, type TodoSettings } from "../src/settings-schema.
 interface DeclaredHost {
 	declaration: SettingsDeclaration | undefined;
 	declared: { get(): Promise<TodoSettings> } | undefined;
+	result: ReturnType<typeof createTodo> | undefined;
 	settingsFile: string;
 }
 
@@ -35,6 +36,7 @@ async function declaredHost(): Promise<DeclaredHost> {
 	const state = {
 		declaration: undefined,
 		declared: undefined,
+		result: undefined,
 		settingsFile,
 	} as DeclaredHost;
 	const read = async (): Promise<Record<string, unknown>> => {
@@ -62,13 +64,18 @@ async function declaredHost(): Promise<DeclaredHost> {
 			settings: { get: read },
 		},
 	} as unknown as SigrunHost;
-	createTodo(host);
+	state.result = createTodo(host);
 	return state;
 }
 
 describe("todo settings schema", () => {
 	test("schema is drawable", () => {
 		assertDrawable(TODO_SETTINGS_SCHEMA);
+	});
+
+	test("factory declares its title", async () => {
+		const host = await declaredHost();
+		expect(host.result!.title).toBe("Todo");
 	});
 
 	test("defaults match the old parser", async () => {
