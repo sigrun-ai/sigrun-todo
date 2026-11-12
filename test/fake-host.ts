@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ConversationId } from "@earendil-works/pi-durable";
+import type { ConversationId, EntryId } from "@earendil-works/pi-durable";
 import type { SettingsDeclaration, SigrunHost } from "@sigrun/sigrun/extension";
 import { checkStoredSettings } from "@sigrun/sigrun/settings-schema";
 import type { SessionMeta } from "@sigrun/shared/session-meta";
@@ -79,6 +79,16 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 		patchMeta: notUsed(),
 		upload: notUsed(),
 		readFile: notUsed(),
+		// Sittings (core 0.16.0): recording stubs; the todo extension never
+		// drives them, but the SigrunHost type requires them.
+		setAutoName: async (id, title) => {
+			record("conversations.setAutoName", id, title);
+			return { applied: false };
+		},
+		markContext: async (id, mark) => {
+			record("conversations.markContext", id, mark);
+			return { entryId: 0 as EntryId };
+		},
 	};
 
 	const host: SigrunHost = {
