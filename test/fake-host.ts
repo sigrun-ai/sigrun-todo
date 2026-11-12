@@ -150,7 +150,7 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 				record("surfaces.changed", id, key, update);
 			},
 		},
-		models: { list: notUsed(), complete: notUsed() },
+		models: { list: notUsed(), isLocal: notUsed(), complete: notUsed() },
 		decisions: { evaluate: notUsed(), list: notUsed() },
 		publishedHooks: { get: notUsed(), call: notUsed() },
 		commands: { list: notUsed(), run: notUsed() },
