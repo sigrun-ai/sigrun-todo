@@ -24,12 +24,19 @@ import type {
 	ConversationId,
 	ToolExecutionApi,
 	ToolExecutionResult,
+	ToolPark,
 	ToolRegistration,
 } from "@earendil-works/pi-durable";
 import { TodoLog, type EntryReader } from "../src/log.js";
 import type { TodoParams } from "../src/state.js";
 import { createTodoTool } from "../src/tool.js";
 import { cleanupDir, closeOpened, openTodoHarness, tempDir } from "./harness.js";
+
+/** Tests drive tools that never park: narrow, asserting no park happened. */
+function settle(result: ToolExecutionResult | ToolPark): ToolExecutionResult {
+	if ("sleep" in result || "wait" in result) throw new Error("test tool parked unexpectedly");
+	return result;
+}
 
 const CID = 1 as ConversationId;
 const OTHER = 2 as ConversationId;
@@ -57,7 +64,7 @@ async function call(
 	params: TodoParams,
 	conversationId: ConversationId = CID,
 ): Promise<ToolExecutionResult> {
-	return await tool.execute(params, apiFor(conversationId), BACKGROUND_CONTEXT);
+	return settle(await tool.execute(params, apiFor(conversationId), BACKGROUND_CONTEXT));
 }
 
 /** The text the model sees; a result that omits `output` is a defect. */

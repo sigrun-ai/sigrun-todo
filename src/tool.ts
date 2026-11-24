@@ -23,7 +23,7 @@
  * non-idempotent create twice.
  */
 
-import type { JsonValue } from "@earendil-works/chord";
+import type { JsonValue } from "@earendil-works/chord/json";
 import { defineTool, type ConversationId, type ToolRegistration } from "@earendil-works/pi-durable";
 import type { TodoLog } from "./log.js";
 import { applyTodo, changesState, TodoParamsSchema, type Op, type TodoParams } from "./state.js";
