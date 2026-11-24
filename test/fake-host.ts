@@ -96,6 +96,8 @@ export async function createFakeHost(opts: FakeHostOptions = {}): Promise<FakeHo
 		settings: {
 			declare: <S, U>(declaration: SettingsDeclaration) => ({
 				get: async () => checkStoredSettings(declaration.schema, opts.settings ?? {}).value as S,
+				effective: async () =>
+					checkStoredSettings(declaration.schema, opts.settings ?? {}).value as S,
 				user: notUsed() as (user: string) => { get(): Promise<U> },
 			}),
 		},
